@@ -1,0 +1,11 @@
+# Python
+*.pyc
+__pycache__/
+
+# Docker
+docker-compose.override.yml
+*.log
+
+# Sistema
+.DS_Store
+*.swp
