@@ -1,6 +1,6 @@
 ---
 
-🚀 KlipperNode: Control Inteligente para tu Impresora 3D
+# 🚀 KlipperNode: Control Inteligente para tu Impresora 3D
 
 **KlipperNode** es un proyecto para configurar un servidor remoto basado en **Ubuntu Server** y **Docker** que te permite administrar impresoras 3D de manera eficiente, escalable y segura.  
 
