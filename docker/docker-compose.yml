@@ -1,0 +1,58 @@
+version: '3.8'
+
+# Define shared volumes for persistent data
+volumes:
+  printer_data:
+  gcode_files:
+  database:
+
+
+services:
+  klipper:
+    image: prind/klipper:latest # Imagen oficial y mantenida de Klipper
+    container_name: klipper
+    restart: unless-stopped
+    privileged: true # Necesario para acceder al hardware USB
+    volumes:
+      - printer_data:/opt/printer_data
+      - gcode_files:/opt/gcode_files
+      - /dev:/dev # Acceso a dispositivos USB
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0 # Puerto serie de la impresora (ajustar según necesidad)
+    networks:
+      - klipper_network
+
+  moonraker:
+    image: prind/moonraker:latest # Imagen oficial de Moonraker
+    container_name: moonraker
+    restart: unless-stopped
+    depends_on:
+      - klipper
+    volumes:
+      - printer_data:/opt/printer_data:rw
+      - gcode_files:/opt/gcode_files:rw
+      - database:/opt/printer_data/database
+    ports:
+      - "7125:7125" # API REST
+    environment:
+      - ENABLE_CORS=true
+    networks:
+      - klipper_network
+
+  mainsail:
+    image: mainsail/mainsail:latest # Imagen oficial de Mainsail
+    container_name: mainsail
+    restart: unless-stopped
+    depends_on:
+      - moonraker
+    ports:
+      - "80:80" # Interfaz web
+    volumes:
+      - printer_data:/opt/printer_data:ro
+      - gcode_files:/opt/gcode_files:ro
+    networks:
+      - klipper_network
+
+networks:
+  klipper_network:
+    driver: bridge
