@@ -8,17 +8,18 @@
 1. Implementar un servidor confiable y eficiente para la gestión de impresoras 3D.
 2. Simplificar la instalación y configuración mediante contenedores Docker y scripts automatizados.
 3. Habilitar acceso remoto seguro con opciones de personalización avanzada.
+4. Mantener datos persistentes y configuraciones seguras.
 
 ---
 
 ## 📌 **Tabla de Contenidos**
 - [🏆 Objetivo del Proyecto](#-objetivo-del-proyecto)
 - [📋 Requisitos Previos](#-requisitos-previos)
-- [📁 Estructura del Repositorio](#-estructura-del-repositorio)
-- [🛠️ Instalación Rápida](#️-instalación-rápida)
-- [📖 Documentación Completa](#-documentación-completa)
-- [🌍 Acceso Remoto](#-acceso-remoto)
-- [🔄 Tareas en Progreso](#-tareas-en-progreso)
+- [📁 Estructura del Proyecto](#-estructura-del-proyecto)
+- [🛠️ Instalación Paso a Paso](#️-instalación-paso-a-paso)
+- [📖 Configuración de Servicios](#-configuración-de-servicios)
+- [🌍 Acceso y Gestión](#-acceso-y-gestión)
+- [🔄 Mantenimiento](#-mantenimiento)
 - [🤝 Contribuciones](#-contribuciones)
 - [🛡️ Licencia](#️-licencia)
 
@@ -28,95 +29,191 @@
 
 ### **Hardware**
 - 🖥️ **Computadora o Servidor**:
-  - Procesador **x86_64** (recomendado).
-  - Conexión USB para las impresoras 3D.
+  - Procesador **x86_64** (recomendado)
+  - Mínimo 2GB RAM
+  - 20GB espacio en disco
+  - Conexión USB para las impresoras 3D
 - 🌐 **Red**:
-  - Conectividad en red local para acceso básico o remota para administración avanzada.
+  - Conexión Ethernet recomendada
+  - IP estática local
+  - Puerto 80 y 7125 disponibles
 
 ### **Software**
-- **Sistema Operativo**: Ubuntu Server 20.04 LTS o superior.  
+- **Sistema Operativo**: Ubuntu Server 20.04 LTS o superior  
   👉 [Descargar Ubuntu Server](https://ubuntu.com/download/server)
-- **Docker** y **Docker Compose**: Gestión de contenedores y servicios múltiples.  
-  👉 [Instalar Docker](https://docs.docker.com/engine/install/) y [Docker Compose](https://docs.docker.com/compose/install/)
+- **Docker** y **Docker Compose**: Última versión estable  
+  👉 [Instalar Docker](https://docs.docker.com/engine/install/)
 
 ---
 
-## 📁 **Estructura del Repositorio**
+## 📁 **Estructura del Proyecto**
 ```plaintext
 KlipperNode/
-├── .gitignore          # Archivos/carpetas ignoradas por Git
-├── README.md           # Documentación principal del proyecto
-├── docker/             # Configuraciones para Docker
-│   ├── configs/        # Archivos de configuración predefinidos
-├── docs/               # Guías y documentación avanzada
-│   ├── setup.md        # Guía de instalación paso a paso
-├── scripts/            # Scripts para automatización
+├── docker-compose.yml      # Configuración de contenedores
+├── printer_data/          # Datos persistentes de la impresora
+│   ├── config/           # Configuraciones de Klipper
+│   ├── logs/            # Registros del sistema
+│   └── database/        # Base de datos de Moonraker
+├── gcode_files/         # Archivos G-code
+└── scripts/             # Scripts de automatización
 ```
 
 ---
 
-## 🛠️ **Instalación Rápida**
+## 🛠️ **Instalación Paso a Paso**
 
-### 1. Prepara el Entorno
-1. Instala **Ubuntu Server** siguiendo nuestra [Guía de Configuración Inicial](docs/setup.md).
-2. Actualiza el sistema operativo:
-   ```bash
-   sudo apt update && sudo apt upgrade -y
-   ```
-
-### 2. Instala Docker y Docker Compose
-Descarga y ejecuta este script para una instalación rápida:
+### 1. Preparación del Sistema
 ```bash
+# Actualizar el sistema
+sudo apt update && sudo apt upgrade -y
+
+# Instalar dependencias necesarias
+sudo apt install -y curl git usbutils
+
+# Instalar Docker y Docker Compose
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 sudo apt install docker-compose -y
+
+# Agregar usuario al grupo docker
+sudo usermod -aG docker $USER
+newgrp docker
 ```
 
-### 3. Configura los Servicios
-Clona este repositorio y despliega los contenedores necesarios:
+### 2. Configuración del Proyecto
 ```bash
-git clone https://github.com/tu_usuario/KlipperNode.git
-cd KlipperNode/docker
+# Crear estructura de directorios
+mkdir -p KlipperNode/{printer_data,gcode_files}
+cd KlipperNode
+
+# Crear docker-compose.yml
+nano docker-compose.yml
+# [Copiar el contenido del docker-compose.yml proporcionado]
+
+# Identificar puerto USB de la impresora
+ls /dev/ttyUSB*
+# Modificar docker-compose.yml con el puerto correcto
+```
+
+### 3. Despliegue de Servicios
+```bash
+# Iniciar contenedores
+docker-compose up -d
+
+# Verificar estado
+docker-compose ps
+```
+
+---
+
+## 📖 **Configuración de Servicios**
+
+### Klipper
+- Puerto serie: Verificar y ajustar en docker-compose.yml
+- Configuración: Disponible en `printer_data/config/`
+- Logs: Accesibles en `printer_data/logs/`
+
+### Moonraker
+- API REST: Puerto 7125
+- Base de datos: Almacenada en `printer_data/database/`
+- CORS habilitado para acceso remoto
+
+### Mainsail
+- Interfaz web: Puerto 80
+- Acceso: `http://<IP_DEL_SERVIDOR>`
+- Monitoreo en tiempo real
+- Gestión de archivos G-code
+
+---
+
+## 🌍 **Acceso y Gestión**
+
+### Acceso Local
+```bash
+http://<IP_DEL_SERVIDOR>     # Interfaz Mainsail
+http://<IP_DEL_SERVIDOR>:7125 # API Moonraker
+```
+
+### Seguridad Recomendada
+1. Configurar firewall:
+```bash
+sudo ufw allow 80/tcp
+sudo ufw allow 7125/tcp
+sudo ufw enable
+```
+
+2. Implementar HTTPS:
+- Usar reverse proxy (nginx)
+- Configurar certificados SSL
+- Implementar autenticación básica
+
+### Acceso Remoto
+Opciones recomendadas:
+- VPN (OpenVPN, WireGuard)
+- Tailscale
+- Cloudflare Tunnel
+
+---
+
+## 🔄 **Mantenimiento**
+
+### Actualizaciones
+```bash
+# Actualizar imágenes
+docker-compose pull
+
+# Reiniciar servicios
+docker-compose down
 docker-compose up -d
 ```
 
----
-
-## 📖 **Documentación Completa**
-Para personalizar y extender la configuración, revisa las guías en el directorio `docs/`:
-- [Configuración Inicial](docs/setup.md)
-- [Personalización de Klipper](docs/klipper.md)
-- [Uso de Mainsail](docs/mainsail.md)
-
----
-
-## 🌍 **Acceso Remoto**
-Accede desde tu navegador a través de la IP del servidor y el puerto predeterminado (`80`):
+### Backups
 ```bash
-http://<IP_DEL_SERVIDOR>
+# Respaldar configuraciones
+tar -czf backup_$(date +%Y%m%d).tar.gz printer_data/
 ```
 
-**Opcional**: Configura una conexión segura para acceso remoto mediante VPN o herramientas como [Tailscale](https://tailscale.com/).
+### Monitoreo
+```bash
+# Ver logs
+docker-compose logs -f
 
----
-
-## 🔄 **Tareas en Progreso**
-- [ ] Completar el archivo `docker-compose.yml` para la integración de servicios.
-- [ ] Agregar configuraciones avanzadas de seguridad (HTTPS, autenticación).
-- [ ] Probar la instalación en escenarios reales y documentar ajustes necesarios.
+# Estado de contenedores
+docker-compose ps
+```
 
 ---
 
 ## 🤝 **Contribuciones**
-¡Tu participación es valiosa!  
-Si tienes sugerencias o mejoras, abre un **issue** o envía un **pull request**. Consulta nuestras [Normas de Contribución](docs/CONTRIBUTING.md) para más información.
+¡Tu participación es valiosa! 
+
+1. Fork del repositorio
+2. Crear rama de características (`git checkout -b feature/AmazingFeature`)
+3. Commit de cambios (`git commit -m 'Add: AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abrir Pull Request
 
 ---
 
 ## 🛡️ **Licencia**
-Este proyecto está bajo la licencia [MIT](LICENSE), lo que permite su uso, modificación y distribución de forma abierta y sin restricciones.
+Este proyecto está bajo la licencia [MIT](LICENSE).
 
 ---
 
-### 🌟 **¿Te gusta este proyecto?**
-Dale una ⭐ en GitHub y compártelo con otros entusiastas de la impresión 3D. ¡Gracias por tu apoyo! 🙌
+## 🌟 **Soporte**
+Si encuentras útil este proyecto:
+- Dale una ⭐ en GitHub
+- Comparte con la comunidad
+- Reporta issues o bugs
+- Contribuye con mejoras
+
+---
+
+### 📞 **Contacto**
+- GitHub Issues: Para problemas y sugerencias
+- Discussions: Para preguntas y debates
+- Wiki: Para documentación extendida
+
+---
+
+*Última actualización: Noviembre 2024*
