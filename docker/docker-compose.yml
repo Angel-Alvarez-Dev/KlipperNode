@@ -1,6 +1,6 @@
 version: '3.8'
 
-# Define shared volumes for persistent data
+# Volúmenes compartidos para datos persistentes
 volumes:
   printer_data:
   gcode_files:
@@ -9,7 +9,7 @@ volumes:
 
 services:
   klipper:
-    image: prind/klipper:latest # Imagen oficial y mantenida de Klipper
+    image: mkuf/klipper:latest # Imagen confiable encontrada en Docker Hub
     container_name: klipper
     restart: unless-stopped
     privileged: true # Necesario para acceder al hardware USB
@@ -18,12 +18,12 @@ services:
       - gcode_files:/opt/gcode_files
       - /dev:/dev # Acceso a dispositivos USB
     devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0 # Puerto serie de la impresora (ajustar según necesidad)
+      - /dev/ttyUSB0:/dev/ttyUSB0 # Ajustar según el puerto USB de tu impresora
     networks:
       - klipper_network
 
   moonraker:
-    image: prind/moonraker:latest # Imagen oficial de Moonraker
+    image: mkuf/moonraker:latest # Imagen confiable encontrada en Docker Hub
     container_name: moonraker
     restart: unless-stopped
     depends_on:
@@ -33,20 +33,20 @@ services:
       - gcode_files:/opt/gcode_files:rw
       - database:/opt/printer_data/database
     ports:
-      - "7125:7125" # API REST
+      - "7125:7125" # Puerto para la API REST
     environment:
       - ENABLE_CORS=true
     networks:
       - klipper_network
 
   mainsail:
-    image: mainsail/mainsail:latest # Imagen oficial de Mainsail
+    image: dimalo/mainsail:latest # Imagen confiable encontrada en Docker Hub
     container_name: mainsail
     restart: unless-stopped
     depends_on:
       - moonraker
     ports:
-      - "80:80" # Interfaz web
+      - "80:80" # Puerto para la interfaz web
     volumes:
       - printer_data:/opt/printer_data:ro
       - gcode_files:/opt/gcode_files:ro
